@@ -13,6 +13,9 @@ colorama.init()
 from colorama import Fore, Style, Back
 import random
 import pickle
+import pyttsx3
+import wikipedia
+
 
 #opens the json file that will have the chat bot response to the specific thing
 with open('Intents.json') as file:
@@ -22,6 +25,7 @@ training_sentences = []
 training_labels = []
 labels = []
 responses = []
+
 
 #Tells ai to distinguish patterns, tag, and responses
 for intent in data['intents']:
@@ -80,9 +84,20 @@ with open("Intents.json") as file:
     data = json.load(file)
 
 
+
 def chat():
     # load trained model
     model = keras.models.load_model('chat_model')
+    converter = pyttsx3.init()
+    speaker_rate = 142 #Set rate of talking speed (0 = slower - 200 = faster)
+    converter.setProperty('rate', speaker_rate)
+    print("")
+    converter.setProperty('volume', 0.7) #Set volume from 0 to 1, can also be over 1
+    #Set voice of speech, can be gender, adult, accent, etc
+    voice_id = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech\Voices\Tokens\TTS_MS_EN-US_ZIRA_11.0"
+    converter.setProperty('voice', voice_id)
+    converter.say("Your ai says : ")
+    converter.runAndWait()
 
     # load tokenizer object
     with open('tokenizer.pickle', 'rb') as handle:
@@ -101,16 +116,42 @@ def chat():
         if inp.lower() == "quit":
             break
 
-        result = model.predict(keras.preprocessing.sequence.pad_sequences(tokenizer.texts_to_sequences([inp]),
-                                             truncating='post', maxlen=max_len))
+        result = model.predict(keras.preprocessing.sequence.pad_sequences(tokenizer.texts_to_sequences([inp]), truncating='post', maxlen=max_len))
         tag = lbl_encoder.inverse_transform([np.argmax(result)])
+        #converter.say(result)
 
         for i in data['intents']:
             if i['tag'] == tag:
                 print(Fore.GREEN + "ChatBot:" + Style.RESET_ALL , np.random.choice(i['responses']))
+                converter.say(np.random.choice(i['responses']))
+                converter.runAndWait()
+                
 
         # print(Fore.GREEN + "ChatBot:" + Style.RESET_ALL,random.choice(responses))
 
-print(Fore.YELLOW + "Start messaging with the bot (type quit to stop)!" + Style.RESET_ALL)
+print(Fore.YELLOW + "Start messaging with the bot (type quit to stop)!\n\n" + Style.RESET_ALL)
 #Tells chat bot to run
+def Speak_AI():
+    #user_topic = input("What would you like to research?\n")
+    #raw_research = wikipedia.summary(user_topic, sentences = 3)
+    converter = pyttsx3.init()
+    speaker_rate = 142 #Set rate of talking speed (0 = slower - 200 = faster)
+    converter.setProperty('rate', speaker_rate)
+    print("")
+    converter.setProperty('volume', 0.7) #Set volume from 0 to 1, can also be over 1
+    #Set voice of speech, can be gender, adult, accent, etc
+    voice_id = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech\Voices\Tokens\TTS_MS_EN-US_ZIRA_11.0"
+    converter.setProperty('voice', voice_id)
+#output part
+    converter.say("Your research on " + user_topic + " is as follows: ")
+    print("Your research is " + user_topic + " which is: \n")
+    print("_" * 45)
+    print(Fore.GREEN + "ChatBot:" + Style.RESET_ALL , np.random.choice(i['responses']))
+    print("_" * 45)
+    print("\n")
+    #This allows for the voice to say the text
+    converter.say(model.predict(keras.preprocessing.sequence.pad_sequences(tokenizer.texts_to_sequences([inp]), truncating='post', maxlen=max_len)))
+    converter.runAndWait()
+    
 chat()
+
